@@ -29,9 +29,31 @@ def get_max(t, p):
     t_max = t[i_max]
     return t_max, p_max
 
-def get_plateau(t, p,  n_ref=100, k=5, n_conferma=3, margine=2):
+
+def get_plateau(t, p, n_ref=100, k=5, n_conferma=3, margine=2):
+    """Restituisce (t_plat, p_plat, i_start): i punti del plateau finale,
+    dopo la variazione repentina.
+
+    n_ref      : punti finali usati per stimare baseline e rumore
+    k          : soglia in unità di sigma rispetto al plateau
+    n_conferma : punti consecutivi fuori soglia per validare la discesa
+    margine    : punti scartati dopo la soglia (la transizione finisce lenta)
+    """
     t, p = np.asarray(t, float), np.asarray(p, float)
-    
+    base = np.median(p[-n_ref:])
+    sigma = 1.4826 * np.median(np.abs(p[-n_ref:] - base))   # sigma robusta (MAD)
+    sigma = max(sigma, 0.005)                                # almeno la risoluzione del sensore
+
+    fuori = np.abs(p - base) > k * sigma                     # punti non ancora sul plateau
+
+    # ultimo indice i tale che i punti [i, i+n_conferma) sono tutti fuori soglia
+    conf = np.convolve(fuori, np.ones(n_conferma, int), mode="valid") == n_conferma
+    if not conf.any():
+        raise ValueError("Nessuna transizione trovata")
+    i_last = len(conf) - 1 - int(np.argmax(conf[::-1]))      # ultima finestra "fuori"
+    i_start = min(i_last + n_conferma + margine, len(p) - 1)
+
+    return t[i_start:], p[i_start:], i_start
     
 
 dati = pd.read_csv("./misure_pressione/run_01.csv")
