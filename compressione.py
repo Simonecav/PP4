@@ -29,20 +29,29 @@ def get_max(t, p):
     t_max = t[i_max]
     return t_max, p_max
 
+def get_plateau(t, p,  n_ref=100, k=5, n_conferma=3, margine=2):
+    t, p = np.asarray(t, float), np.asarray(p, float)
+    
+    
+
 dati = pd.read_csv("./misure_pressione/run_01.csv")
 
-d_P_strum = 0.005/np.sqrt(12)
+var_P_strum = np.sqrt(0.005)/12
 
 P = dati["Pressione(kPa)"]
 t = dati["Tempo(s)"]
 
 dati.plot("Tempo(s)", "Pressione(kPa)")
 
-t_0, P_0, i_0 = get_p0(t, P)
-plt.plot(t_0, P_0)
+t_iniziali, P_iniziali, i_0 = get_p0(t, P)
+plt.plot(t_iniziali, P_iniziali)
+P_0 = P_iniziali.mean()
+dP_0 = np.sqrt((P_iniziali.std(ddof=1)**2)/(i_0 + 1) + var_P_strum)
 
-t_max, P_max = get_max(t, P)
-plt.plot(t_max, P_max, 'o')
+t_s, P_s = get_max(t, P)
+dP_s = np.sqrt(var_P_strum)
+plt.plot(t_s, P_s, 'o')
 
-
+t_plateau, P_plateau, i_0 = get_plateau(t, P, k=10)
+plt.plot(t_plateau, P_plateau)
 plt.show()
